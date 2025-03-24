@@ -17,19 +17,13 @@ class Emploi extends Model
         'emploi_type',
     ];
 
-    // Relationship with Employer
-    public function employer()
+    public function entreprise()
     {
-        return $this->belongsTo(Employer::class);
+        return $this->belongsTo(Entreprise::class);
     }
 
-    // Relationship with Applications
     public function applications()
     {
-        return $this->hasMany(Application::class);
+        return $this->hasMany(Application::class, 'emplois_id');
     }
-    public function entreprise()
-{
-    return $this->belongsTo(Entreprise::class, 'entreprise_id');
-}
 }

@@ -5,87 +5,106 @@ namespace App\Http\Controllers;
 use App\Models\Emploi;
 use App\Models\Entreprise;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class EmploiController extends Controller
 {
-    // Affiche la liste des emplois
-    public function index()
+    public function index(Request $request)
     {
-        $emplois = Emploi::with('entreprise')->get();
-        return view('emploi', compact('emplois'));
+        $query = Emploi::with('entreprise')->latest();
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('location', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('type')) {
+            $query->where('emploi_type', $request->input('type'));
+        }
+
+        if ($request->filled('location')) {
+            $query->where('location', 'like', "%{$request->input('location')}%");
+        }
+
+        $emplois = $query->paginate(12)->appends(request()->query());
+
+        return view('emploi.index', compact('emplois'));
     }
 
-    // Affiche les détails d'un emploi
-    public function show($id)
+    public function show(Emploi $emploi)
     {
-        $emploi = Emploi::with('entreprise')->findOrFail($id);
-        return view('emploi-details', compact('emploi'));
+        $emploi->load(['entreprise', 'applications' => function($query) {
+            $query->with('chercheur.user');
+        }]);
+
+        $similarJobs = Emploi::where('id', '!=', $emploi->id)
+            ->where(function($query) use ($emploi) {
+                $query->where('emploi_type', $emploi->emploi_type)
+                      ->orWhere('location', $emploi->location);
+            })
+            ->with('entreprise')
+            ->limit(3)
+            ->get();
+
+        return view('emploi.show', compact('emploi', 'similarJobs'));
     }
 
-    // Affiche le formulaire de création d'un emploi
     public function create()
     {
-        $entreprises = Entreprise::all(); // Récupération des entreprises pour le formulaire
-        return view('emploi-create', compact('entreprises'));
+        return view('emploi.create');
     }
 
-    // Enregistre un nouvel emploi
     public function store(Request $request)
-{
-    $request->validate([
-        'entreprise_id' => 'required|exists:entreprises,id',
-        'title' => 'required|string|max:255',
-        'description' => 'required|string',
-        'location' => 'required|string|max:255',
-        'salary' => 'required|numeric',
-        'emploi_type' => 'required|string|max:50',
-    ]);
-
-    Emploi::create([
-        'entreprise_id' => $request->entreprise_id,
-        'title' => $request->title,
-        'description' => $request->description,
-        'location' => $request->location,
-        'salary' => $request->salary,
-        'emploi_type' => $request->emploi_type,
-    ]);
-
-    return redirect()->route('emplois.index')->with('success', 'Emploi ajouté avec succès.');
-}
-
-
-    // Affiche le formulaire d'édition d'un emploi
-    public function edit($id)
     {
-        $emploi = Emploi::findOrFail($id);
-        $entreprises = Entreprise::all();
-        return view('emploi-edit', compact('emploi', 'entreprises'));
-    }
-
-    // Met à jour un emploi
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'entreprise_id' => 'required|exists:entreprises,id',
+        $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'description' => 'required|string',
+            'description' => 'required|string|min:100',
             'location' => 'required|string|max:255',
-            'salary' => 'required|numeric',
-            'emploi_type' => 'required|string|max:50',
+            'salary' => 'required|numeric|min:0',
+            'emploi_type' => 'required|in:full-time,part-time,contract,internship'
         ]);
 
-        $emploi = Emploi::findOrFail($id);
-        $emploi->update($request->all());
+        $emploi = $request->user()->entreprise->emplois()->create($validated);
 
-        return redirect()->route('emplois.index')->with('success', 'Emploi mis à jour.');
+        return redirect()->route('emplois.show', $emploi)
+            ->with('success', 'Job posted successfully!');
     }
 
-    // Supprime un emploi
-    public function destroy($id)
+    public function edit(Emploi $emploi)
     {
-        $emploi = Emploi::findOrFail($id);
+        $this->authorize('update', $emploi);
+        return view('emploi.edit', compact('emploi'));
+    }
+
+    public function update(Request $request, Emploi $emploi)
+    {
+        $this->authorize('update', $emploi);
+        
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'required|string|min:100',
+            'location' => 'required|string|max:255',
+            'salary' => 'required|numeric|min:0',
+            'emploi_type' => 'required|in:full-time,part-time,contract,internship'
+        ]);
+
+        $emploi->update($validated);
+
+        return redirect()->route('emplois.show', $emploi)
+            ->with('success', 'Job updated successfully!');
+    }
+
+    public function destroy(Emploi $emploi)
+    {
+        $this->authorize('delete', $emploi);
+        
         $emploi->delete();
 
-        return redirect()->route('emplois.index')->with('success', 'Emploi supprimé.');
+        return redirect()->route('entreprise.dashboard')
+            ->with('success', 'Job deleted successfully!');
     }
 }

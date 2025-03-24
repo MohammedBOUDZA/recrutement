@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\User;
+use App\Models\Entreprise;
+use App\Models\Chercheur;
 
 class DatabaseSeeder extends Seeder
 {
@@ -12,11 +14,43 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // \App\Models\User::factory(10)->create();
+        // Create admin user
+        User::create([
+            'name' => 'Admin User',
+            'email' => 'admin@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'admin'
+        ]);
 
-        // \App\Models\User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
+        // Create sample company
+        $company = User::create([
+            'name' => 'Sample Company',
+            'email' => 'company@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'entreprise'
+        ]);
+
+        Entreprise::create([
+            'user_id' => $company->id,
+            'company_name' => 'Tech Corp',
+            'company_description' => 'Leading tech company',
+            'website' => 'https://techcorp.com'
+        ]);
+
+        // Create sample job seeker
+        $jobSeeker = User::create([
+            'name' => 'Job Seeker',
+            'email' => 'seeker@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'chercheur'
+        ]);
+
+        Chercheur::create([
+            'user_id' => $jobSeeker->id,
+            'resume' => 'sample_resume.pdf',
+            'skills' => 'PHP, Laravel, MySQL',
+            'experience' => '5 years',
+            'education' => 'Bachelor in Computer Science'
+        ]);
     }
 }

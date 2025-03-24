@@ -2,10 +2,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Application;
+use App\Models\Chercheur;
 use App\Models\Emploi;
+use App\Notifications\ApplicationStatusChanged;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Facades\Storage;
 
 class ApplicationController extends Controller
 {
@@ -27,31 +29,70 @@ class ApplicationController extends Controller
 
         return back()->with('success', 'Application submitted successfully!');
     }
-    public function updateStatus(Request $request, $id)
+
+    public function store(Request $request, Emploi $emploi)
     {
-        $application = Application::findOrFail($id);
-        $request->validate([
+        $chercheur = Chercheur::where('user_id', Auth::id())->firstOrFail();
+
+        // Check if already applied
+        if ($emploi->applications()->where('chercheurs_id', $chercheur->id)->exists()) {
+            return back()->with('error', 'You have already applied for this position.');
+        }
+
+        $validated = $request->validate([
+            'cover_letter' => 'required|string|min:100',
+            'resume' => 'required|file|mimes:pdf,doc,docx|max:2048'
+        ]);
+
+        $resumePath = $request->file('resume')->store('resumes', 'public');
+
+        Application::create([
+            'emplois_id' => $emploi->id,
+            'chercheurs_id' => $chercheur->id,
+            'cover_letter' => $validated['cover_letter'],
+            'resume_path' => $resumePath,
+            'status' => 'pending'
+        ]);
+
+        return back()->with('success', 'Application submitted successfully!');
+    }
+
+    public function updateStatus(Request $request, Application $application)
+    {
+        $validated = $request->validate([
             'status' => 'required|in:pending,accepted,rejected'
         ]);
 
-        $application->update(['status' => $request->status]);
+        $application->update($validated);
 
-        return back()->with('success', 'Application status updated!');
+        // Send notification to applicant
+        $application->chercheur->user->notify(
+            new ApplicationStatusChanged($application)
+        );
+
+        return back()->with('success', 'Application status updated successfully.');
     }
+
     public function userApplications()
     {
-        $applications = Application::where('user_id', Auth::id())->with('job')->get();
+        $applications = Application::where('chercheurs_id', Auth::user()->chercheur->id)
+            ->with(['emploi.entreprise'])
+            ->latest()
+            ->paginate(10);
 
-        return view('user.applications', compact('applications'));
+        return view('applications.index', compact('applications'));
     }
 
-    // Show applications for a company (employer) based on their jobs
     public function companyApplications()
     {
-        $jobs = Auth::user()->Emplois; // Assuming a User has many Jobs
-        $applications = Application::whereIn('Emploi_id', $jobs->pluck('id'))->with('user')->get();
+        $applications = Application::whereHas('emploi', function($query) {
+            $query->where('entreprise_id', Auth::user()->entreprise->id);
+        })
+        ->with(['chercheur.user', 'emploi'])
+        ->latest()
+        ->paginate(10);
 
-        return view('company.applications', compact('applications'));
+        return view('applications.company', compact('applications'));
     }
 }
 
