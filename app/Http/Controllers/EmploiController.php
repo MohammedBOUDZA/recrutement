@@ -9,30 +9,13 @@ use Illuminate\Support\Facades\Auth;
 
 class EmploiController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $query = Emploi::with('entreprise')->latest();
-
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->where(function($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('location', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('type')) {
-            $query->where('emploi_type', $request->input('type'));
-        }
-
-        if ($request->filled('location')) {
-            $query->where('location', 'like', "%{$request->input('location')}%");
-        }
-
-        $emplois = $query->paginate(12)->appends(request()->query());
-
-        return view('emploi.index', compact('emplois'));
+        $jobs = Emploi::with('entreprise')
+            ->latest()
+            ->paginate(9);
+        
+        return view('emploi.index', compact('jobs'));
     }
 
     public function show(Emploi $emploi)

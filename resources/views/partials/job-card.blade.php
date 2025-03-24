@@ -1,6 +1,3 @@
-@extends('layouts.app')
-
-
 <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100">
     <div class="p-6">
         <div class="flex justify-between items-start mb-4">

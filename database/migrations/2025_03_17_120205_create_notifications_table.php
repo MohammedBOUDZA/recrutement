@@ -18,6 +18,7 @@ return new class extends Migration
             $table->foreignId('chercheur_id');
             $table->foreignId('emploi_id');
             $table->string('status');
+            $table->text('message')->nullable(); // Added message column
             $table->timestamps();
         });
 

@@ -16,12 +16,10 @@ class ApplicationController extends Controller
         $job = Emploi::findOrFail($jobId);
         $user = auth()->user();
 
-        // Check if user already applied
         if (Application::where('Emploi_id', $jobId)->where('user_id', $user->id)->exists()) {
             return back()->with('error', 'You have already applied for this job.');
         }
 
-        // Save the application
         Application::create([
             'Emploi_id' => $job->id,
             'user_id' => $user->id,
@@ -34,7 +32,6 @@ class ApplicationController extends Controller
     {
         $chercheur = Chercheur::where('user_id', Auth::id())->firstOrFail();
 
-        // Check if already applied
         if ($emploi->applications()->where('chercheurs_id', $chercheur->id)->exists()) {
             return back()->with('error', 'You have already applied for this position.');
         }
@@ -65,7 +62,6 @@ class ApplicationController extends Controller
 
         $application->update($validated);
 
-        // Send notification to applicant
         $application->chercheur->user->notify(
             new ApplicationStatusChanged($application)
         );

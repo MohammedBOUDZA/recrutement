@@ -15,11 +15,11 @@ return new class extends Migration
 
         Schema::create('chercheurs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id');
-            $table->string('resume');
-            $table->string('skills');
-            $table->string('experience');
-            $table->string('education');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('cv')->nullable();
+            $table->string('skills')->nullable();
+            $table->string('experience')->nullable();
+            $table->string('education')->nullable();
             $table->timestamps();
         });
 

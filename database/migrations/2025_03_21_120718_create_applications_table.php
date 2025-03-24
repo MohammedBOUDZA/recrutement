@@ -12,6 +12,8 @@ return new class extends Migration {
             $table->foreignId('emplois_id')->constrained()->onDelete('cascade'); // Job that was applied for
             $table->foreignId('chercheurs_id')->constrained()->onDelete('cascade'); // Applicant
             $table->enum('status', ['pending', 'accepted', 'rejected'])->default('pending');
+            $table->string('resume')->nullable(); // Added resume column for file path
+            $table->text('cover_letter')->nullable(); // Optional cover letter
             $table->timestamps();
         });
     }
