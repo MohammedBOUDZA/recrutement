@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules\Password;
 
 class RegisterController extends Controller
@@ -35,13 +36,13 @@ class RegisterController extends Controller
                 ->symbols()],
             'role' => ['required', 'in:chercheur,recruteur'],
             
-            // Conditional validation for Job Seeker
+            // Job Seeker validation
             'cv' => ['required_if:role,chercheur', 'file', 'mimes:pdf', 'max:5120'],
             'skills' => ['required_if:role,chercheur', 'string', 'nullable'],
             'experience' => ['required_if:role,chercheur', 'string', 'nullable'],
             'education' => ['required_if:role,chercheur', 'string', 'nullable'],
             
-            // Conditional validation for Recruiter
+            // Recruiter validation
             'company_name' => ['required_if:role,recruteur', 'string', 'max:255'],
             'description' => ['required_if:role,recruteur', 'string'],
             'website' => ['required_if:role,recruteur', 'url', 'max:255'],
@@ -72,18 +73,19 @@ class RegisterController extends Controller
                     'experience' => $request->experience,
                     'education' => $request->education,
                 ]);
-            } else if ($request->role === 'recruteur') {
+            } elseif ($request->role === 'recruteur') {
                 Entreprise::create([
                     'user_id' => $user->id,
                     'company_name' => $request->company_name,
-                    'description' => $request->company_description,
+                    'description' => $request->description,
                     'website' => $request->website,
-                    'location' => $request->company_location,
+                    'location' => $request->location,
                     'industry' => $request->industry,
                 ]);
             }
 
             DB::commit();
+
             auth()->login($user);
             
             return redirect()->route('dashboard')
@@ -96,9 +98,11 @@ class RegisterController extends Controller
                 Storage::disk('public')->delete($cvPath);
             }
 
+            Log::error('Registration error: ' . $e->getMessage());
+
             return back()
                 ->with('error', 'Registration failed. Please try again.')
-                ->withInput($request->except('password', 'password_confirmation'));
+                ->withInput($request->except(['password', 'password_confirmation', 'cv']));
         }
     }
 }
