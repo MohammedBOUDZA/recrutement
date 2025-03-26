@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Chercheur;
+use App\Models\Entreprise;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -33,10 +34,19 @@ class RegisterController extends Controller
                 ->numbers()
                 ->symbols()],
             'role' => ['required', 'in:chercheur,recruteur'],
+            
+            // Conditional validation for Job Seeker
             'cv' => ['required_if:role,chercheur', 'file', 'mimes:pdf', 'max:5120'],
             'skills' => ['required_if:role,chercheur', 'string', 'nullable'],
             'experience' => ['required_if:role,chercheur', 'string', 'nullable'],
             'education' => ['required_if:role,chercheur', 'string', 'nullable'],
+            
+            // Conditional validation for Recruiter
+            'company_name' => ['required_if:role,recruteur', 'string', 'max:255'],
+            'description' => ['required_if:role,recruteur', 'string'],
+            'website' => ['required_if:role,recruteur', 'url', 'max:255'],
+            'location' => ['required_if:role,recruteur', 'string', 'max:255'],
+            'industry' => ['required_if:role,recruteur', 'string', 'max:255'],
         ]);
 
         try {
@@ -61,6 +71,15 @@ class RegisterController extends Controller
                     'skills' => $request->skills,
                     'experience' => $request->experience,
                     'education' => $request->education,
+                ]);
+            } else if ($request->role === 'recruteur') {
+                Entreprise::create([
+                    'user_id' => $user->id,
+                    'company_name' => $request->company_name,
+                    'description' => $request->company_description,
+                    'website' => $request->website,
+                    'location' => $request->company_location,
+                    'industry' => $request->industry,
                 ]);
             }
 
