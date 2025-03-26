@@ -2,21 +2,55 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Chercheur; // Import the Chercheur model
-use Illuminate\Support\Facades\Auth; // To get the authenticated user
+use App\Models\Chercheur;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
-    // Show the profile page
     public function show()
     {
-        // Get the authenticated user
         $user = Auth::user();
+        $profile = null;
 
-        // Fetch the profile data from the `chercheurs` table
-        $profile = Chercheur::where('user_id', $user->id)->first();
+        if ($user->role === 'chercheur') {
+            $profile = Chercheur::where('user_id', $user->id)->first();
+        }
 
-        // Pass the profile data to the view
-        return view('profile', compact('profile'));
+        return view('emploi.profile', compact('profile', 'user'));
+    }
+
+    public function update(Request $request)
+    {
+        $user = Auth::user();
+        
+        if ($user->role !== 'chercheur') {
+            return back()->with('error', 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'cv' => ['nullable', 'file', 'mimes:pdf', 'max:5120'],
+            'skills' => ['required', 'string'],
+            'experience' => ['required', 'string'],
+            'education' => ['required', 'string'],
+        ]);
+
+        $profile = $user->chercheur;
+
+        if ($request->hasFile('cv')) {
+            if ($profile->cv) {
+                Storage::disk('public')->delete($profile->cv);
+            }
+            $cvPath = $request->file('cv')->store('cvs/' . $user->id, 'public');
+            $profile->cv = $cvPath;
+        }
+
+        $profile->update([
+            'skills' => $request->skills,
+            'experience' => $request->experience,
+            'education' => $request->education,
+        ]);
+
+        return back()->with('success', 'Profile updated successfully!');
     }
 }

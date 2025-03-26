@@ -38,35 +38,31 @@
                     @if(auth()->user()->role === 'chercheur' && !$emploi->hasApplied(auth()->user()))
                         <form action="{{ route('applications.store', $emploi) }}" 
                               method="POST" 
-                              enctype="multipart/form-data"
                               class="mt-8 pt-8 border-t">
                             @csrf
                             <div class="mb-4">
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Cover Letter</label>
                                 <textarea name="cover_letter" 
                                         rows="4" 
-                                        class="w-full rounded-lg border-gray-300 shadow-sm"
+                                        class="w-full rounded-lg border-gray-300 shadow-sm @error('cover_letter') border-red-500 @enderror"
                                         required></textarea>
                                 @error('cover_letter')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    <p class="mt-1 text-sm text-red-600">{{ $errors->first('cover_letter') }}</p>
                                 @enderror
                             </div>
-                            <div class="mb-4">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Resume (PDF only)</label>
-                                <input type="file" 
-                                       name="resume" 
-                                       accept=".pdf"
-                                       required
-                                       class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                                @error('resume')
-                                        <p class="mt-1 text-sm text-red-600">{{ $errors->first('resume') }}</p>
-                                    @enderror
-                            </div>
+                            
                             <button type="submit" 
                                     class="w-full md:w-auto bg-blue-500 text-white px-8 py-3 rounded-lg hover:bg-blue-600 transition-colors">
                                 Apply Now
                             </button>
                         </form>
+                    @elseif(auth()->user()->role === 'chercheur' && $emploi->hasApplied(auth()->user()))
+                        <div class="mt-8 pt-8 border-t">
+                            <p class="text-green-600 font-medium">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                You have already applied for this position
+                            </p>
+                        </div>
                     @endif
                 @else
                     <div class="mt-8 pt-8 border-t text-center">
@@ -79,17 +75,6 @@
                 @endauth
             </div>
         </div>
-
-        @if(isset($similarJobs) && $similarJobs->count() > 0)
-            <div class="mt-8">
-                <h2 class="text-2xl font-bold mb-4">Similar Jobs</h2>
-                <div class="grid gap-6 md:grid-cols-3">
-                    @foreach($similarJobs as $job)
-                        @include('partials.job-card', ['job' => $job])
-                    @endforeach
-                </div>
-            </div>
-        @endif
     </div>
 </div>
 @endsection

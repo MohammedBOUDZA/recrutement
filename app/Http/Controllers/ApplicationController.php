@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\Application;
 use App\Models\Chercheur;
 use App\Models\Emploi;
+use App\Models\Notification;
 use App\Notifications\ApplicationStatusChanged;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -38,20 +39,25 @@ class ApplicationController extends Controller
 
         $validated = $request->validate([
             'cover_letter' => 'required|string|min:100',
-            'resume' => 'required|file|mimes:pdf,doc,docx|max:2048'
         ]);
 
-        $resumePath = $request->file('resume')->store('resumes', 'public');
-
-        Application::create([
+        // Create application
+        $application = Application::create([
             'emplois_id' => $emploi->id,
             'chercheurs_id' => $chercheur->id,
             'cover_letter' => $validated['cover_letter'],
-            'resume_path' => $resumePath,
             'status' => 'pending'
         ]);
 
-        return back()->with('success', 'Application submitted successfully!');
+        // Create notification for employer
+        Notification::create([
+            'chercheur_id' => $chercheur->id,
+            'emploi_id' => $emploi->id,
+            'status' => 'new_application',
+            'message' => "New application received for {$emploi->title} from {$chercheur->user->name}"
+        ]);
+
+        return back()->with('success', 'Application submitted successfully! The employer will be notified.');
     }
 
     public function updateStatus(Request $request, Application $application)

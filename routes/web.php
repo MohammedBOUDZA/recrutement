@@ -31,40 +31,34 @@ Route::middleware('auth')->group(function () {
     Route::get('profile', [ProfileController::class, 'show'])->name('profile');
     Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');
 
-    // Job listings routes
+    // Job listings routes (accessible to all authenticated users)
     Route::get('/emplois', [EmploiController::class, 'index'])->name('emplois.index');
-    Route::get('/emplois/create', [EmploiController::class, 'create'])->name('emplois.create');
-    Route::post('/emplois', [EmploiController::class, 'store'])->name('emplois.store');
     Route::get('/emplois/{emploi}', [EmploiController::class, 'show'])->name('emplois.show');
-    Route::get('/emplois/{emploi}/edit', [EmploiController::class, 'edit'])->name('emplois.edit');
-    Route::put('/emplois/{emploi}', [EmploiController::class, 'update'])->name('emplois.update');
-    Route::delete('/emplois/{emploi}', [EmploiController::class, 'destroy'])->name('emplois.destroy');
-
-    // Applications routes
-    Route::post('/emplois/{emploi}/apply', [ApplicationController::class, 'store'])->name('applications.store');
-    Route::get('/applications', [ApplicationController::class, 'userApplications'])->name('applications.index');
-    Route::patch('/applications/{application}/status', [ApplicationController::class, 'updateStatus'])
-        ->name('applications.status.update');
 
     // Job seeker routes
     Route::middleware('role:chercheur')->group(function () {
-        Route::get('applications', [ApplicationController::class, 'userApplications'])->name('chercheur.applications');
-        Route::post('emplois/{emploi}/apply', [ApplicationController::class, 'store'])->name('applications.store');
+        Route::get('applications', [ApplicationController::class, 'userApplications'])
+            ->name('chercheur.applications');
+        Route::post('emplois/{emploi}/apply', [ApplicationController::class, 'store'])
+            ->name('applications.store');
     });
 
-    // Employer routes
-    Route::middleware('role:entreprise')->group(function () {
-        Route::get('dashboard', [EmployerController::class, 'dashboard'])->name('entreprise.dashboard');
-        Route::resource('mes-emplois', EmploiController::class)->except('index');
+    // Recruiter routes
+    Route::middleware('role:recruteur')->group(function () {
+        Route::get('dashboard', [EmployerController::class, 'dashboard'])
+            ->name('entreprise.dashboard');
+        Route::resource('mes-emplois', EmploiController::class)
+            ->except(['index', 'show']);
         Route::get('applications/received', [ApplicationController::class, 'companyApplications'])
             ->name('entreprise.applications');
         Route::patch('applications/{application}/status', [ApplicationController::class, 'updateStatus'])
             ->name('applications.status.update');
     });
 
-    // Admin routes
-    Route::middleware('role:admin')->prefix('admin')->group(function () {
-        Route::get('dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
-        Route::resource('users', AdminUserController::class);
-    });
+    // Dashboard redirect based on role
+    Route::get('/dashboard', function () {
+        return auth()->user()->role === 'chercheur' 
+            ? redirect()->route('emplois.index') 
+            : redirect()->route('entreprise.dashboard');
+    })->name('dashboard');
 });
