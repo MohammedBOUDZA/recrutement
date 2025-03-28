@@ -3,50 +3,129 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Providers\RouteServiceProvider;
+use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class LoginController extends Controller
 {
-    // Afficher le formulaire de connexion
-    public function showLoginForm()
+    use AuthenticatesUsers, LogsActivity;
+
+    protected $redirectTo = RouteServiceProvider::HOME;
+
+    public function __construct()
     {
-        return view('auth.login');
+        $this->middleware('guest')->except('logout');
+        $this->middleware('verified')->except(['logout']);
     }
 
-    // Traiter la demande de connexion
-    public function login(Request $request)
+    protected function attemptLogin(Request $request)
     {
-        // Valider les données du formulaire
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
-        //cherche le role de cette user
-        $user = User::where('email', $credentials['email'])->first();
+        $this->ensureIsNotRateLimited($request);
 
-        // Tenter de connecter l'utilisateur
-        if (Auth::attempt($credentials)) {
-            if ($user->role=="user"){
-                return redirect()->route('home');
+        $credentials = $request->only('email', 'password');
+        $remember = $request->boolean('remember');
+
+        if (Auth::attempt($credentials, $remember)) {
+            $user = Auth::user();
+
+            // Check if user is active
+            if (!$user->is_active) {
+                Auth::logout();
+                throw ValidationException::withMessages([
+                    'email' => ['Your account has been deactivated. Please contact support.'],
+                ]);
             }
-            return redirect()->route('ahome');
-             // Rediriger vers la page souhaitée après connexion
+
+            // Check if email is verified
+            if (!$user->hasVerifiedEmail()) {
+                Auth::logout();
+                throw ValidationException::withMessages([
+                    'email' => ['Please verify your email address before logging in.'],
+                ]);
+            }
+
+            // Clear rate limiter on successful login
+            RateLimiter::clear($this->throttleKey($request));
+
+            return true;
         }
 
-        // En cas d'échec de la connexion
-        return back()->withErrors([
-            'email' => 'Les informations d\'identification fournies ne correspondent pas à nos enregistrements.',
+        // Increment failed attempts
+        RateLimiter::hit($this->throttleKey($request));
+
+        return false;
+    }
+
+    protected function ensureIsNotRateLimited(Request $request)
+    {
+        if (!RateLimiter::tooManyAttempts($this->throttleKey($request), 5)) {
+            return;
+        }
+
+        $seconds = RateLimiter::availableIn($this->throttleKey($request));
+
+        throw ValidationException::withMessages([
+            'email' => trans('auth.throttle', [
+                'seconds' => $seconds,
+                'minutes' => ceil($seconds / 60),
+            ]),
         ]);
     }
 
-    // Déconnexion de l'utilisateur
+    protected function throttleKey(Request $request)
+    {
+        return Str::transliterate(Str::lower($request->input('email')).'|'.$request->ip());
+    }
+
+    protected function sendFailedLoginResponse(Request $request)
+    {
+        throw ValidationException::withMessages([
+            'email' => [trans('auth.failed')],
+        ]);
+    }
+
+    protected function authenticated(Request $request, $user)
+    {
+        // Log successful login
+        activity()
+            ->causedBy($user)
+            ->performedOn($user)
+            ->withProperties(['ip' => $request->ip()])
+            ->log('User logged in');
+
+        // Redirect based on role
+        if ($user->role === 'chercheur') {
+            return redirect()->route('chercheur.dashboard');
+        } else {
+            return redirect()->route('recruteur.dashboard');
+        }
+    }
+
     public function logout(Request $request)
     {
-        Auth::logout(); // Déconnecter l'utilisateur
-        $request->session()->invalidate(); // Invalider la session
-        $request->session()->regenerateToken(); // Régénérer le jeton CSRF
-        return redirect('/'); // Rediriger vers la page d'accueil
+        $user = Auth::user();
+
+        // Log logout
+        if ($user) {
+            activity()
+                ->causedBy($user)
+                ->performedOn($user)
+                ->withProperties(['ip' => $request->ip()])
+                ->log('User logged out');
+        }
+
+        $this->guard()->logout();
+
+        $request->session()->invalidate();
+
+        $request->session()->regenerateToken();
+
+        return redirect('/');
     }
 }

@@ -6,103 +6,142 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Chercheur;
 use App\Models\Entreprise;
-use Illuminate\Http\Request;
+use Illuminate\Foundation\Auth\RegistersUsers;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules\Password;
 
 class RegisterController extends Controller
 {
+    use RegistersUsers;
+
+    protected $redirectTo = '/dashboard';
+
     public function __construct()
     {
         $this->middleware('guest');
     }
 
-    public function showRegistrationForm()
+    protected function validator(array $data)
     {
-        return view('auth.register');
+        $rules = [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/',
+                'confirmed'
+            ],
+            'role' => ['required', 'string', 'in:chercheur,recruteur'],
+        ];
+
+        // Add role-specific validation rules
+        if ($data['role'] === 'chercheur') {
+            $rules = array_merge($rules, [
+                'cv' => ['required', 'file', 'mimes:pdf', 'max:5120'], // 5MB max
+                'skills' => ['required', 'string', 'max:1000'],
+                'experience' => ['required', 'string', 'max:2000'],
+                'education' => ['required', 'string', 'max:2000'],
+            ]);
+        } else {
+            $rules = array_merge($rules, [
+                'company_name' => ['required', 'string', 'max:255'],
+                'description' => ['required', 'string', 'max:2000'],
+                'website' => ['required', 'url', 'max:255'],
+                'location' => ['required', 'string', 'max:255'],
+                'industry' => ['required', 'string', 'max:255'],
+            ]);
+        }
+
+        return Validator::make($data, $rules, [
+            'password.regex' => 'The password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.',
+            'cv.max' => 'The CV file must not be larger than 5MB.',
+        ]);
+    }
+
+    protected function create(array $data)
+    {
+        try {
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => Hash::make($data['password']),
+                'role' => $data['role'],
+            ]);
+
+            if ($data['role'] === 'chercheur') {
+                // Handle CV upload
+                $cvPath = $data['cv']->store('cvs', 'public');
+
+                // Create chercheur profile
+                Chercheur::create([
+                    'user_id' => $user->id,
+                    'cv_path' => $cvPath,
+                    'skills' => $data['skills'],
+                    'experience' => $data['experience'],
+                    'education' => $data['education'],
+                ]);
+            } else {
+                // Create entreprise profile
+                Entreprise::create([
+                    'user_id' => $user->id,
+                    'name' => $data['company_name'],
+                    'description' => $data['description'],
+                    'website' => $data['website'],
+                    'location' => $data['location'],
+                    'industry' => $data['industry'],
+                ]);
+            }
+
+            return $user;
+        } catch (\Exception $e) {
+            // If user was created but profile creation failed, delete the user
+            if (isset($user)) {
+                $user->delete();
+            }
+
+            // If CV was uploaded but profile creation failed, delete the CV
+            if (isset($cvPath)) {
+                Storage::disk('public')->delete($cvPath);
+            }
+
+            throw $e;
+        }
     }
 
     public function register(Request $request)
     {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'confirmed', Password::min(8)
-                ->mixedCase()
-                ->numbers()
-                ->symbols()],
-            'role' => ['required', 'in:chercheur,recruteur'],
-            
-            // Job Seeker validation
-            'cv' => ['required_if:role,chercheur', 'file', 'mimes:pdf', 'max:5120'],
-            'skills' => ['required_if:role,chercheur', 'string', 'nullable'],
-            'experience' => ['required_if:role,chercheur', 'string', 'nullable'],
-            'education' => ['required_if:role,chercheur', 'string', 'nullable'],
-            
-            // Recruiter validation
-            'company_name' => ['required_if:role,recruteur', 'string', 'max:255'],
-            'description' => ['required_if:role,recruteur', 'string'],
-            'website' => ['required_if:role,recruteur', 'url', 'max:255'],
-            'location' => ['required_if:role,recruteur', 'string', 'max:255'],
-            'industry' => ['required_if:role,recruteur', 'string', 'max:255'],
-        ]);
+        $this->validator($request->all())->validate();
 
-        try {
-            DB::beginTransaction();
+        event(new \Illuminate\Auth\Events\Registered($user = $this->create($request->all())));
 
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'role' => $request->role,
-            ]);
+        $this->guard()->login($user);
 
-            if ($request->role === 'chercheur') {
-                $cvPath = null;
-                if ($request->hasFile('cv')) {
-                    $cvPath = $request->file('cv')->store('cvs/' . $user->id, 'public');
-                }
+        if ($response = $this->registered($request, $user)) {
+            return $response;
+        }
 
-                Chercheur::create([
-                    'user_id' => $user->id,
-                    'cv' => $cvPath,
-                    'skills' => $request->skills,
-                    'experience' => $request->experience,
-                    'education' => $request->education,
-                ]);
-            } elseif ($request->role === 'recruteur') {
-                Entreprise::create([
-                    'user_id' => $user->id,
-                    'company_name' => $request->company_name,
-                    'description' => $request->description,
-                    'website' => $request->website,
-                    'location' => $request->location,
-                    'industry' => $request->industry,
-                ]);
-            }
+        return $request->wantsJson()
+            ? new \Illuminate\Http\JsonResponse([], 201)
+            : redirect($this->redirectPath());
+    }
 
-            DB::commit();
+    protected function registered(Request $request, $user)
+    {
+        // Send welcome email
+        $user->notify(new \App\Notifications\WelcomeNotification());
 
-            auth()->login($user);
-            
-            return redirect()->route('dashboard')
-                ->with('success', 'Registration successful! Welcome to our platform.');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
-            if (isset($cvPath) && $cvPath) {
-                Storage::disk('public')->delete($cvPath);
-            }
-
-            Log::error('Registration error: ' . $e->getMessage());
-
-            return back()
-                ->with('error', 'Registration failed. Please try again.')
-                ->withInput($request->except(['password', 'password_confirmation', 'cv']));
+        // Redirect based on role
+        if ($user->role === 'chercheur') {
+            return redirect()->route('chercheur.dashboard');
+        } else {
+            return redirect()->route('recruteur.dashboard');
         }
     }
 }
