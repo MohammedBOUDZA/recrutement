@@ -8,10 +8,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, LogsActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -51,13 +52,14 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function savedJobs()
     {
-        return $this->belongsToMany(Emploi::class, 'saved_jobs')
+        return $this->belongsToMany(Emploi::class, 'saved_jobs', 'user_id', 'emploi_id')
                     ->withTimestamps();
     }
 
     public function applications()
     {
-        return $this->hasMany(Application::class);
+        return $this->belongsToMany(Emploi::class, 'applications', 'user_id', 'emplois_id')
+                    ->withTimestamps();
     }
 
     public function isJobSeeker()
@@ -72,11 +74,24 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function hasSavedJob(Emploi $emploi)
     {
-        return $this->savedJobs()->where('emploi_id', $emploi->id)->exists();
+        return $this->savedJobs()->where('emplois.id', $emploi->id)->exists();
     }
 
     public function hasAppliedToJob(Emploi $emploi)
     {
-        return $this->applications()->where('emploi_id', $emploi->id)->exists();
+        return $this->applications()->where('emplois_id', $emploi->id)->exists();
+    }
+
+    public function getActivitylogOptions(): \Spatie\Activitylog\LogOptions
+    {
+        return \Spatie\Activitylog\LogOptions::defaults()
+            ->logOnly(['name', 'email', 'role'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
+
+    public function entreprise()
+    {
+        return $this->hasOne(Entreprise::class);
     }
 }

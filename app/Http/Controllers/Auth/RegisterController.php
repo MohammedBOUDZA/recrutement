@@ -91,7 +91,7 @@ class RegisterController extends Controller
                 // Create entreprise profile
                 Entreprise::create([
                     'user_id' => $user->id,
-                    'name' => $data['company_name'],
+                    'company_name' => $data['company_name'],
                     'description' => $data['description'],
                     'website' => $data['website'],
                     'location' => $data['location'],

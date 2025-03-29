@@ -8,7 +8,7 @@
         <!-- Search and Filter Section -->
         <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
             <div class="px-4 py-5 sm:p-6">
-                <form action="{{ route('emplois.index') }}" method="GET" class="space-y-4">
+                <form id="searchForm" action="{{ route('emplois.index') }}" method="GET" class="space-y-4">
                     <div class="grid grid-cols-1 gap-y-4 sm:grid-cols-2 sm:gap-x-4">
                         <div>
                             <label for="keyword" class="block text-sm font-medium text-gray-700">Keywords</label>
@@ -54,7 +54,7 @@
                     <div class="flex items-center space-x-4">
                         <div class="flex items-center">
                             <input type="checkbox" name="remote" id="remote" value="1" {{ request('remote') ? 'checked' : '' }}
-                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded filter-checkbox">
                             <label for="remote" class="ml-2 block text-sm text-gray-900">
                                 Remote Work
                             </label>
@@ -62,7 +62,7 @@
 
                         <div class="flex items-center">
                             <input type="checkbox" name="hybrid" id="hybrid" value="1" {{ request('hybrid') ? 'checked' : '' }}
-                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded filter-checkbox">
                             <label for="hybrid" class="ml-2 block text-sm text-gray-900">
                                 Hybrid Work
                             </label>
@@ -70,7 +70,7 @@
 
                         <div class="flex items-center">
                             <input type="checkbox" name="urgent" id="urgent" value="1" {{ request('urgent') ? 'checked' : '' }}
-                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded filter-checkbox">
                             <label for="urgent" class="ml-2 block text-sm text-gray-900">
                                 Urgent Positions
                             </label>
@@ -224,4 +224,58 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle form submission
+    const searchForm = document.getElementById('searchForm');
+    const filterInputs = searchForm.querySelectorAll('input, select');
+
+    // Auto-submit form when select elements change
+    searchForm.querySelectorAll('select').forEach(select => {
+        select.addEventListener('change', () => searchForm.submit());
+    });
+
+    // Auto-submit form when checkboxes change
+    searchForm.querySelectorAll('.filter-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', () => searchForm.submit());
+    });
+
+    // Handle keyword and location search with debounce
+    let timeout = null;
+    const textInputs = searchForm.querySelectorAll('input[type="text"]');
+    textInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                searchForm.submit();
+            }, 500); // Wait 500ms after user stops typing
+        });
+    });
+
+    // Clear filters
+    const clearFilters = () => {
+        filterInputs.forEach(input => {
+            if (input.type === 'checkbox') {
+                input.checked = false;
+            } else {
+                input.value = '';
+            }
+        });
+        searchForm.submit();
+    };
+
+    // Prevent form submission on Enter key for text inputs
+    textInputs.forEach(input => {
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                searchForm.submit();
+            }
+        });
+    });
+});
+</script>
+@endpush
 @endsection

@@ -50,7 +50,7 @@
         <h1>404</h1>
         <p>Oops! The page you're looking for doesn't exist.</p>
         <p>It might have been moved or deleted. Please check the URL or go back to the homepage.</p>
-        <a href="{{ url('/login') }}">Get out</a>
+        <a href="{{ url('/') }}">Get out</a>
     </div>
 </body>
 </html>

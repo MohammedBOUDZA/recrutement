@@ -26,7 +26,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('emploi_id')->constrained()->onDelete('cascade');
             $table->foreignId('skill_id')->constrained()->onDelete('cascade');
-            $table->enum('level', ['required', 'preferred', 'nice_to_have'])->default('required');
+            $table->enum('level', ['beginner', 'intermediate', 'advanced', 'expert'])->default('beginner');
             $table->timestamps();
         });
 

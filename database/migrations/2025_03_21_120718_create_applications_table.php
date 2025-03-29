@@ -10,11 +10,12 @@ return new class extends Migration {
         Schema::create('applications', function (Blueprint $table) {
             $table->id();
             $table->foreignId('emplois_id')->constrained()->onDelete('cascade'); // Job that was applied for
-            $table->foreignId('chercheurs_id')->constrained()->onDelete('cascade'); // Applicant
+            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Applicant
             $table->string('resume')->nullable();
             $table->string('resume_path')->nullable();
             $table->text('cover_letter')->nullable(); // Optional cover letter
             $table->json('answers')->nullable();
+            $table->text('notes')->nullable(); // Admin notes about the application
             $table->string('current_company')->nullable();
             $table->string('current_position')->nullable();
             $table->decimal('current_salary', 10, 2)->nullable();

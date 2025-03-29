@@ -22,9 +22,11 @@
 
 <div class="container mx-auto px-4 py-8">
     <h2 class="text-2xl font-bold mb-6">Latest Job Postings</h2>
-    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <div class="flex flex-wrap gap-6">
         @foreach($latestJobs as $job)
-            @include('partials.job-card', ['job' => $job])
+            <div class="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
+                @include('partials.job-card', ['job' => $job])
+            </div>
         @endforeach
     </div>
 </div>

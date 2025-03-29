@@ -10,11 +10,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 class LoginController extends Controller
 {
-    use AuthenticatesUsers, LogsActivity;
+    use AuthenticatesUsers;
 
     protected $redirectTo = RouteServiceProvider::HOME;
 
@@ -43,7 +42,7 @@ class LoginController extends Controller
             }
 
             // Check if email is verified
-            if (!$user->hasVerifiedEmail()) {
+            if (!$user->email_verified_at) {
                 Auth::logout();
                 throw ValidationException::withMessages([
                     'email' => ['Please verify your email address before logging in.'],

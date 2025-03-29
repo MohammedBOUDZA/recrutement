@@ -49,12 +49,15 @@ class EmploiController extends Controller
 
         // Filter by salary range
         if ($request->has('salary_range')) {
-            [$min, $max] = explode('-', $request->salary_range);
-            if ($max === '+') {
-                $query->where('salary_min', '>=', $min);
-            } else {
-                $query->where('salary_min', '>=', $min)
-                      ->where('salary_max', '<=', $max);
+            $parts = explode('-', $request->salary_range);
+            if (count($parts) === 2) {
+                [$min, $max] = $parts;
+                if ($max === '+') {
+                    $query->where('salary_min', '>=', $min);
+                } else {
+                    $query->where('salary_min', '>=', $min)
+                          ->where('salary_max', '<=', $max);
+                }
             }
         }
 
@@ -123,15 +126,15 @@ class EmploiController extends Controller
         ]);
 
         // Get similar jobs
-        $similarJobs = Emploi::where('id', '!=', $emploi->id)
+        $similarJobs = Emploi::where('emplois.id', '!=', $emploi->id)
             ->where('expires_at', '>', now())
             ->where('status', 'active')
             ->where(function($query) use ($emploi) {
                 $query->whereHas('categories', function($q) use ($emploi) {
-                    $q->whereIn('id', $emploi->categories->pluck('id'));
+                    $q->whereIn('job_categories.id', $emploi->categories->pluck('id'));
                 })
                 ->orWhereHas('skills', function($q) use ($emploi) {
-                    $q->whereIn('id', $emploi->skills->pluck('id'));
+                    $q->whereIn('skills.id', $emploi->skills->pluck('id'));
                 });
             })
             ->with(['entreprise', 'categories', 'skills'])
@@ -276,14 +279,18 @@ class EmploiController extends Controller
 
     public function apply(Emploi $emploi)
     {
-        if (!Auth::user()->isJobSeeker()) {
-            return back()->with('error', 'Only job seekers can apply for jobs.');
+        $user = auth()->user();
+        
+        // Check if user has already applied
+        if ($user->applications()->where('emplois_id', $emploi->id)->exists()) {
+            return redirect()->route('emplois.show', $emploi)
+                ->with('error', 'You have already applied for this job.');
         }
 
-        if (Auth::user()->hasAppliedToJob($emploi)) {
-            return back()->with('error', 'You have already applied for this job.');
-        }
+        // Create the application
+        $user->applications()->attach($emploi->id);
 
-        return view('emploi.apply', compact('emploi'));
+        return redirect()->route('emplois.show', $emploi)
+            ->with('success', 'Your application has been submitted successfully!');
     }
 }

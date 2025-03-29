@@ -21,5 +21,9 @@ class Entreprise extends Model
     {
         return $this->hasMany(Emploi::class, 'entreprise_id');
     }
-    
+
+    public function applications()
+    {
+        return $this->hasManyThrough(Application::class, Emploi::class, 'entreprise_id', 'emplois_id');
+    }
 }
