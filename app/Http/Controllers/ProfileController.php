@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Chercheur;
+use App\Models\Application;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
@@ -17,9 +18,15 @@ class ProfileController extends Controller
 
         if ($user->role === 'chercheur') {
             $profile = Chercheur::where('user_id', $user->id)->first();
+            $applications = Application::where('user_id', $user->id)
+                ->with(['emploi.entreprise'])
+                ->latest()
+                ->take(5)
+                ->get();
+            return view('emploi.profile', compact('profile', 'user', 'applications'));
         }
 
-        return view('emploi.profile', compact('profile', 'user'));
+        return view('emplois.profile', compact('profile', 'user'));
     }
 
     public function update(Request $request)

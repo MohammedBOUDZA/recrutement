@@ -10,14 +10,33 @@
                 </h2>
                 <p class="text-gray-600 mt-1">{{ $job->entreprise->company_name }}</p>
             </div>
-            <span class="px-3 py-1 text-sm rounded-full font-medium whitespace-nowrap {{ 
-                $job->emploi_type === 'full-time' ? 'bg-green-100 text-green-800' :
-                ($job->emploi_type === 'part-time' ? 'bg-blue-100 text-blue-800' :
-                ($job->emploi_type === 'contract' ? 'bg-purple-100 text-purple-800' :
-                'bg-gray-100 text-gray-800')) 
-            }}">
-                {{ Str::title($job->emploi_type) }}
-            </span>
+            <div class="flex items-center space-x-3">
+                @auth
+                    @if(auth()->user()->savedJobs->contains($job->id))
+                        <form action="{{ route('emplois.unsave', $job) }}" method="POST">
+                            @csrf
+                            <button type="submit" class="inline-flex items-center p-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                                <i class="fas fa-bookmark"></i>
+                            </button>
+                        </form>
+                    @else
+                        <form action="{{ route('emplois.save', $job) }}" method="POST">
+                            @csrf
+                            <button type="submit" class="inline-flex items-center p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                                <i class="far fa-bookmark"></i>
+                            </button>
+                        </form>
+                    @endif
+                @endauth
+                <span class="px-3 py-1 text-sm rounded-full font-medium whitespace-nowrap {{ 
+                    $job->emploi_type === 'full-time' ? 'bg-green-100 text-green-800' :
+                    ($job->emploi_type === 'part-time' ? 'bg-blue-100 text-blue-800' :
+                    ($job->emploi_type === 'contract' ? 'bg-purple-100 text-purple-800' :
+                    'bg-gray-100 text-gray-800')) 
+                }}">
+                    {{ Str::title($job->emploi_type) }}
+                </span>
+            </div>
         </div>
 
         <div class="space-y-3 mb-4">

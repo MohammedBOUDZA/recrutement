@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Auth;
 
 class AhomeController extends Controller
 {
-    // Dashboard - Show company's jobs
     public function index()
     {
         $jobs = Emploi::where('entreprise_id', Auth::id())
@@ -18,13 +17,11 @@ class AhomeController extends Controller
         return view('admin.dashboard', compact('jobs'));
     }
 
-    // Show job creation form
     public function create()
     {
         return view('admin.create');
     }
 
-    // Store new job
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -48,13 +45,11 @@ class AhomeController extends Controller
             ->with('success', 'Job post created successfully!');
     }
 
-    // Show job edit form
     public function edit(Emploi $emploi)
     {
         return view('admin.edit', compact('emploi'));
     }
 
-    // Update job
     public function update(Request $request, Emploi $emploi)
     {
         $validated = $request->validate([
@@ -71,7 +66,6 @@ class AhomeController extends Controller
             ->with('success', 'Job post updated successfully!');
     }
 
-    // Delete job
     public function destroy(Emploi $emploi)
     {
         $emploi->delete();

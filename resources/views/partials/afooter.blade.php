@@ -1,13 +1,11 @@
 <footer class="footer">
     <div class="container">
         <div class="footer-content">
-            <!-- About Section -->
             <div class="footer-section">
                 <h4>About Us</h4>
                 <p>We are a leading recruitment platform connecting emploi seekers with employers. Find your dream emploi or the perfect candidate today!</p>
             </div>
 
-            <!-- Quick Links Section -->
             <div class="footer-section">
                 <h4>Quick Links</h4>
                 <ul>
@@ -19,7 +17,6 @@
                 </ul>
             </div>
 
-            <!-- Contact Section -->
             <div class="footer-section">
                 <h4>Contact Us</h4>
                 <ul>
@@ -29,7 +26,6 @@
                 </ul>
             </div>
 
-            <!-- Social Media Section -->
             <div class="footer-section">
                 <h4>Follow Us</h4>
                 <div class="social-links">
@@ -41,7 +37,6 @@
             </div>
         </div>
 
-        <!-- Copyright Section -->
         <div class="footer-bottom">
             <p>&copy; {{ date('Y') }} Recruitment Website. All rights reserved.</p>
         </div>

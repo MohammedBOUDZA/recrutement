@@ -10,8 +10,14 @@ class ChercheurController extends Controller
     public function dashboard()
     {
         $user = auth()->user();
-        $applications = $user->applications()->with(['emploi.entreprise'])->latest()->get();
-        $savedJobs = $user->savedJobs()->with(['entreprise'])->get();
+        $applications = Application::where('user_id', $user->id)
+            ->with(['emploi.entreprise'])
+            ->latest()
+            ->get();
+        
+        $savedJobs = $user->savedJobs()
+            ->with('entreprise')
+            ->get();
         
         return view('chercheur.dashboard', compact('applications', 'savedJobs'));
     }

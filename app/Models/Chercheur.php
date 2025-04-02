@@ -8,9 +8,12 @@ class Chercheur extends Model
     protected $fillable = [
         'user_id',
         'cv',
+        'cv_path',
         'skills',
         'experience',
-        'education'
+        'education',
+        'location',
+        'phone'
     ];
 
     public function user()

@@ -8,31 +8,26 @@
         <form method="POST" action="{{ route('entreprise.jobs.store') }}">
             @csrf
 
-            <!-- Job Title -->
             <div class="mb-4">
                 <label class="block text-gray-700 font-medium mb-2">Job Title</label>
                 <input type="text" name="title" class="w-full px-4 py-2 border rounded-lg" required>
             </div>
 
-            <!-- Description -->
             <div class="mb-4">
                 <label class="block text-gray-700 font-medium mb-2">Description</label>
                 <input type="text" name="description" class="w-full px-4 py-2 border rounded-lg" required>
             </div>
 
-            <!-- Location -->
             <div class="mb-4">
                 <label class="block text-gray-700 font-medium mb-2">Location</label>
                 <input type="text" name="location" class="w-full px-4 py-2 border rounded-lg" required>
             </div>
 
-            <!-- Salary -->
             <div class="mb-4">
                 <label class="block text-gray-700 font-medium mb-2">Salary</label>
                 <input type="number" step="0.01" name="salary" class="w-full px-4 py-2 border rounded-lg" required>
             </div>
 
-            <!-- Job Type -->
             <div class="mb-4">
                 <label class="block text-gray-700 font-medium mb-2">Job Type</label>
                 <input type="text" name="emploi_type" class="w-full px-4 py-2 border rounded-lg" required>

@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Laravel\Socialite\Facades\Socialite;
+use App\Models\User;
+use Exception;
 
 class LoginController extends Controller
 {
@@ -20,7 +23,92 @@ class LoginController extends Controller
     public function __construct()
     {
         $this->middleware('guest')->except('logout');
-        $this->middleware('verified')->except(['logout']);
+    }
+
+    /**
+     * Redirect the user to the Google authentication page.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function redirectToGoogle()
+    {
+        return Socialite::driver('google')->redirect();
+    }
+
+    /**
+     * Obtain the user information from Google.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function handleGoogleCallback()
+    {
+        try {
+            $user = Socialite::driver('google')->user();
+            $finduser = User::where('google_id', $user->id)->first();
+
+            if ($finduser) {
+                Auth::login($finduser);
+                return redirect()->intended('dashboard');
+            } else {
+                $newUser = User::create([
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'google_id' => $user->id,
+                    'password' => bcrypt(Str::random(16)),
+                    'role' => 'chercheur', // Default role
+                    'email_verified_at' => now(), // Auto verify email for social login
+                    'is_active' => true,
+                ]);
+
+                Auth::login($newUser);
+                return redirect()->intended('dashboard');
+            }
+        } catch (Exception $e) {
+            return redirect()->route('login')->with('error', 'Something went wrong with Google login');
+        }
+    }
+
+    /**
+     * Redirect the user to the LinkedIn authentication page.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function redirectToLinkedin()
+    {
+        return Socialite::driver('linkedin')->redirect();
+    }
+
+    /**
+     * Obtain the user information from LinkedIn.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function handleLinkedinCallback()
+    {
+        try {
+            $user = Socialite::driver('linkedin')->user();
+            $finduser = User::where('linkedin_id', $user->id)->first();
+
+            if ($finduser) {
+                Auth::login($finduser);
+                return redirect()->intended('dashboard');
+            } else {
+                $newUser = User::create([
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'linkedin_id' => $user->id,
+                    'password' => bcrypt(Str::random(16)),
+                    'role' => 'chercheur', // Default role
+                    'email_verified_at' => now(), // Auto verify email for social login
+                    'is_active' => true,
+                ]);
+
+                Auth::login($newUser);
+                return redirect()->intended('dashboard');
+            }
+        } catch (Exception $e) {
+            return redirect()->route('login')->with('error', 'Something went wrong with LinkedIn login');
+        }
     }
 
     protected function attemptLogin(Request $request)
@@ -33,7 +121,6 @@ class LoginController extends Controller
         if (Auth::attempt($credentials, $remember)) {
             $user = Auth::user();
 
-            // Check if user is active
             if (!$user->is_active) {
                 Auth::logout();
                 throw ValidationException::withMessages([
@@ -41,7 +128,6 @@ class LoginController extends Controller
                 ]);
             }
 
-            // Check if email is verified
             if (!$user->email_verified_at) {
                 Auth::logout();
                 throw ValidationException::withMessages([
@@ -49,13 +135,11 @@ class LoginController extends Controller
                 ]);
             }
 
-            // Clear rate limiter on successful login
             RateLimiter::clear($this->throttleKey($request));
 
             return true;
         }
 
-        // Increment failed attempts
         RateLimiter::hit($this->throttleKey($request));
 
         return false;
@@ -91,14 +175,12 @@ class LoginController extends Controller
 
     protected function authenticated(Request $request, $user)
     {
-        // Log successful login
         activity()
             ->causedBy($user)
             ->performedOn($user)
             ->withProperties(['ip' => $request->ip()])
             ->log('User logged in');
 
-        // Redirect based on role
         if ($user->role === 'chercheur') {
             return redirect()->route('chercheur.dashboard');
         } else {
@@ -109,8 +191,7 @@ class LoginController extends Controller
     public function logout(Request $request)
     {
         $user = Auth::user();
-
-        // Log logout
+        
         if ($user) {
             activity()
                 ->causedBy($user)

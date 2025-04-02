@@ -26,7 +26,6 @@ class EmploiController extends Controller
         $query = Emploi::with(['entreprise', 'categories', 'skills'])
             ->active();
 
-        // Search by keyword
         if ($request->has('keyword')) {
             $query->where(function($q) use ($request) {
                 $q->where('title', 'like', '%' . $request->keyword . '%')
@@ -37,17 +36,14 @@ class EmploiController extends Controller
             });
         }
 
-        // Filter by location
         if ($request->has('location')) {
             $query->where('location', 'like', '%' . $request->location . '%');
         }
 
-        // Filter by employment type
         if ($request->has('employment_type')) {
             $query->where('employment_type', $request->employment_type);
         }
 
-        // Filter by salary range
         if ($request->has('salary_range')) {
             $parts = explode('-', $request->salary_range);
             if (count($parts) === 2) {
@@ -61,7 +57,6 @@ class EmploiController extends Controller
             }
         }
 
-        // Filter by remote/hybrid
         if ($request->boolean('remote')) {
             $query->remote();
         }
@@ -72,21 +67,18 @@ class EmploiController extends Controller
             $query->urgent();
         }
 
-        // Filter by categories
         if ($request->has('categories')) {
             $query->whereHas('categories', function($q) use ($request) {
                 $q->whereIn('id', $request->categories);
             });
         }
 
-        // Filter by skills
         if ($request->has('skills')) {
             $query->whereHas('skills', function($q) use ($request) {
                 $q->whereIn('id', $request->skills);
             });
         }
 
-        // Sort results
         switch ($request->sort) {
             case 'salary_high':
                 $query->orderBy('salary_max', 'desc');
@@ -96,7 +88,6 @@ class EmploiController extends Controller
                 break;
             case 'relevance':
                 if ($request->has('keyword')) {
-                    // Implement relevance sorting based on keyword matches
                     $query->orderByRaw('CASE 
                         WHEN title LIKE ? THEN 1
                         WHEN description LIKE ? THEN 2
@@ -117,7 +108,6 @@ class EmploiController extends Controller
 
     public function show(Emploi $emploi)
     {
-        // Record job view
         JobView::create([
             'emploi_id' => $emploi->id,
             'user_id' => Auth::id(),
@@ -125,7 +115,6 @@ class EmploiController extends Controller
             'user_agent' => request()->userAgent(),
         ]);
 
-        // Get similar jobs
         $similarJobs = Emploi::where('emplois.id', '!=', $emploi->id)
             ->where('expires_at', '>', now())
             ->where('status', 'active')
@@ -141,14 +130,14 @@ class EmploiController extends Controller
             ->take(5)
             ->get();
 
-        return view('emploi.show', compact('emploi', 'similarJobs'));
+        return view('emplois.show', compact('emploi', 'similarJobs'));
     }
 
     public function create()
     {
         $categories = JobCategory::all();
         $skills = Skill::all();
-        return view('emploi.create', compact('categories', 'skills'));
+        return view('emplois.create',compact("categories","skills"));
     }
 
     public function store(Request $request)
@@ -180,7 +169,6 @@ class EmploiController extends Controller
         $emploi->questions = $request->questions ? json_encode($request->questions) : null;
         $emploi->save();
 
-        // Attach categories and skills
         $emploi->categories()->attach($request->categories);
         foreach ($request->skills as $skillId => $level) {
             $emploi->skills()->attach($skillId, ['level' => $level]);
@@ -196,7 +184,7 @@ class EmploiController extends Controller
         
         $categories = JobCategory::all();
         $skills = Skill::all();
-        return view('emploi.edit', compact('emploi', 'categories', 'skills'));
+        return view('emplois.edit', compact('emploi', 'categories', 'skills'));
     }
 
     public function update(Request $request, Emploi $emploi)
@@ -229,7 +217,6 @@ class EmploiController extends Controller
         $emploi->questions = $request->questions ? json_encode($request->questions) : null;
         $emploi->save();
 
-        // Sync categories and skills
         $emploi->categories()->sync($request->categories);
         $emploi->skills()->sync(
             collect($request->skills)->map(function($level, $skillId) {
@@ -281,13 +268,11 @@ class EmploiController extends Controller
     {
         $user = auth()->user();
         
-        // Check if user has already applied
         if ($user->applications()->where('emplois_id', $emploi->id)->exists()) {
             return redirect()->route('emplois.show', $emploi)
                 ->with('error', 'You have already applied for this job.');
         }
 
-        // Create the application
         $user->applications()->attach($emploi->id);
 
         return redirect()->route('emplois.show', $emploi)

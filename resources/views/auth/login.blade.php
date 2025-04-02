@@ -30,7 +30,6 @@
             <form class="space-y-6" action="{{ route('login') }}" method="POST">
                 @csrf
 
-                <!-- Email Field -->
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
                     <div class="mt-1 relative rounded-md shadow-sm">
@@ -49,7 +48,6 @@
                     </div>
                 </div>
 
-                <!-- Password Field -->
                 <div>
                     <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
                     <div class="mt-1 relative rounded-md shadow-sm">
@@ -141,7 +139,6 @@ function togglePassword(inputId) {
     const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
     input.setAttribute('type', type);
     
-    // Toggle the eye icon
     const button = input.nextElementSibling.querySelector('button');
     const icon = button.querySelector('svg');
     if (type === 'password') {

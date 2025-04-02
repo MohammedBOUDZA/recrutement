@@ -5,7 +5,6 @@
     <div class="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-6">
         <h1 class="text-2xl font-bold mb-6">Edit Emploi</h1>
 
-        {{-- Error Display --}}
         @if ($errors->any())
             <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
                 <ul>
@@ -20,7 +19,6 @@
             @csrf
             @method('PUT')
 
-            <!-- Title -->
             <div class="mb-4">
                 <label class="block text-gray-700 font-medium mb-2">Job Title</label>
                 <input type="text" name="title" 
@@ -32,7 +30,6 @@
                 @enderror
             </div>
 
-            <!-- Description -->
             <div class="mb-4">
                 <label class="block text-gray-700 font-medium mb-2">Description</label>
                 <textarea name="description" 
@@ -44,7 +41,6 @@
                 @enderror
             </div>
 
-            <!-- Location -->
             <div class="mb-4">
                 <label class="block text-gray-700 font-medium mb-2">Location</label>
                 <input type="text" name="location" 
@@ -56,7 +52,6 @@
                 @enderror
             </div>
 
-            <!-- Salary -->
             <div class="mb-4">
                 <label class="block text-gray-700 font-medium mb-2">Salary</label>
                 <input type="number" step="0.01" name="salary" 
@@ -68,7 +63,6 @@
                 @enderror
             </div>
 
-            <!-- Job Type -->
             <div class="mb-4">
                 <label class="block text-gray-700 font-medium mb-2">Job Type</label>
                 <input type="text" name="emploi_type" 

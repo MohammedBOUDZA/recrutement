@@ -41,7 +41,6 @@ class RegisterController extends Controller
             'role' => ['required', 'string', 'in:chercheur,recruteur'],
         ];
 
-        // Add role-specific validation rules
         if ($data['role'] === 'chercheur') {
             $rules = array_merge($rules, [
                 'cv' => ['required', 'file', 'mimes:pdf', 'max:5120'], // 5MB max
@@ -76,10 +75,8 @@ class RegisterController extends Controller
             ]);
 
             if ($data['role'] === 'chercheur') {
-                // Handle CV upload
                 $cvPath = $data['cv']->store('cvs', 'public');
 
-                // Create chercheur profile
                 Chercheur::create([
                     'user_id' => $user->id,
                     'cv_path' => $cvPath,
@@ -88,7 +85,6 @@ class RegisterController extends Controller
                     'education' => $data['education'],
                 ]);
             } else {
-                // Create entreprise profile
                 Entreprise::create([
                     'user_id' => $user->id,
                     'company_name' => $data['company_name'],
@@ -134,10 +130,8 @@ class RegisterController extends Controller
 
     protected function registered(Request $request, $user)
     {
-        // Send welcome email
         $user->notify(new \App\Notifications\WelcomeNotification());
 
-        // Redirect based on role
         if ($user->role === 'chercheur') {
             return redirect()->route('chercheur.dashboard');
         } else {

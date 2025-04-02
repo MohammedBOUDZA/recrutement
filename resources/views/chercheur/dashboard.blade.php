@@ -5,7 +5,6 @@
     <h1 class="text-3xl font-bold mb-8">Tableau de bord du chercheur d'emploi</h1>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <!-- Applications -->
         <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-xl font-semibold mb-4">Mes Candidatures</h2>
             @if($applications->count() > 0)
@@ -24,7 +23,6 @@
             @endif
         </div>
 
-        <!-- Saved Jobs -->
         <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-xl font-semibold mb-4">Offres sauvegardées</h2>
             @if($savedJobs->count() > 0)

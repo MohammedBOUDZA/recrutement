@@ -18,7 +18,25 @@
                                 Dashboard
                             </a>
                         @endif
+                        @if(auth()->user()->role === 'recruteur')
+                            <a href="{{ route('recruteur.dashboard') }}" 
+                               class="inline-flex items-center px-1 pt-1 text-gray-500 hover:text-gray-900">
+                                Dashboard
+                            </a>
+                            <a href="{{ route('entreprise.applications') }}" 
+                               class="inline-flex items-center px-1 pt-1 text-gray-500 hover:text-gray-900">
+                                Applications
+                            </a>
+                            <a href="{{ route('emplois.create') }}" 
+                               class="inline-flex items-center px-1 pt-1 text-gray-500 hover:text-gray-900">
+                                Post Job
+                            </a>
+                        @endif
                         @if(auth()->user()->role === 'chercheur')
+                            <a href="{{ route('chercheur.dashboard') }}" 
+                               class="inline-flex items-center px-1 pt-1 text-gray-500 hover:text-gray-900">
+                                Dashboard
+                            </a>
                             <a href="{{ route('chercheur.applications') }}" 
                                class="inline-flex items-center px-1 pt-1 text-gray-500 hover:text-gray-900">
                                 My Applications

@@ -27,7 +27,6 @@
             <form action="{{ route('register') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                 @csrf
                 
-                <!-- Name Field -->
                 <div>
                     <label for="name" class="block text-sm font-medium text-gray-700">Full Name</label>
                     <div class="mt-1 relative rounded-md shadow-sm">
@@ -45,7 +44,6 @@
                     </div>
                 </div>
 
-                <!-- Email Field -->
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
                     <div class="mt-1 relative rounded-md shadow-sm">
@@ -64,7 +62,6 @@
                     </div>
                 </div>
 
-                <!-- Password Fields -->
                 <div class="space-y-4">
                     <div>
                         <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
@@ -124,7 +121,6 @@
                     </div>
                 </div>
 
-                <!-- Role Selection -->
                 <div>
                     <label for="role" class="block text-sm font-medium text-gray-700">I want to</label>
                     <div class="mt-1">
@@ -141,7 +137,6 @@
                     </div>
                 </div>
 
-                <!-- Job Seeker Fields -->
                 <div id="jobSeekerFields" class="space-y-6" style="display: {{ old('role') == 'chercheur' ? 'block' : 'none' }};">
                     <div>
                         <label for="cv" class="block text-sm font-medium text-gray-700">CV (PDF)</label>
@@ -197,7 +192,6 @@
                     </div>
                 </div>
 
-                <!-- Recruiter Fields -->
                 <div id="recruiterFields" class="space-y-6" style="display: {{ old('role') == 'recruteur' ? 'block' : 'none' }};">
                     <div>
                         <label for="company_name" class="block text-sm font-medium text-gray-700">Company Name</label>
@@ -301,7 +295,6 @@ document.addEventListener('DOMContentLoaded', function() {
         jobSeekerFields.style.display = selectedRole === 'chercheur' ? 'block' : 'none';
         recruiterFields.style.display = selectedRole === 'recruteur' ? 'block' : 'none';
         
-        // Clear fields when switching roles
         if (selectedRole === 'chercheur') {
             clearFields(recruiterFields);
         } else if (selectedRole === 'recruteur') {
@@ -317,10 +310,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Initial state
     toggleFields();
 
-    // Handle changes
     roleSelect.addEventListener('change', toggleFields);
 });
 
@@ -329,7 +320,6 @@ function togglePassword(inputId) {
     const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
     input.setAttribute('type', type);
     
-    // Toggle the eye icon
     const button = input.nextElementSibling.querySelector('button');
     const icon = button.querySelector('svg');
     if (type === 'password') {

@@ -10,7 +10,7 @@ class Application extends Model
 
     protected $fillable = [
         'emplois_id',
-        'chercheurs_id',
+        'user_id',
         'resume',
         'resume_path',
         'cover_letter',
@@ -40,13 +40,11 @@ class Application extends Model
         'current_salary' => 'decimal:2'
     ];
 
-    // Relationship with Chercheur
-    public function chercheur()
+    public function user()
     {
-        return $this->belongsTo(Chercheur::class, 'chercheurs_id');
+        return $this->belongsTo(User::class);
     }
 
-    // Relationship with Emploi
     public function emploi()
     {
         return $this->belongsTo(Emploi::class, 'emplois_id');

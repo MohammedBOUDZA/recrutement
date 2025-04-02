@@ -24,6 +24,15 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'role',
+        'google_id',
+        'linkedin_id',
+        'is_active',
+        'company_name',
+        'company_description',
+        'company_website',
+        'company_size',
+        'industry',
+        'company_logo',
     ];
 
     /**
@@ -58,8 +67,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function applications()
     {
-        return $this->belongsToMany(Emploi::class, 'applications', 'user_id', 'emplois_id')
-                    ->withTimestamps();
+        return $this->hasMany(Application::class);
     }
 
     public function isJobSeeker()

@@ -10,10 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <!-- Header -->
     @include('partials.aheader')
 
-    <!-- Main Content -->
     <div class="container">
         @yield('main')
     </div>
@@ -22,10 +20,8 @@
     </div>
     <a href="{{ route('login') }}" class="btn btn-danger">Logout</a>
 
-    <!-- Footer -->
     @include('partials.afooter')
 
-    <!-- Scripts -->
     <script src="{{ asset('js/app.js') }}"></script>
 </body>
 </html>
